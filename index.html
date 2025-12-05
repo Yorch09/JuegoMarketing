@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Geomarketing Challenge: La Estrategia</title>
+    <style>
+        :root {
+            --starbucks-green: #00704A;
+            --starbucks-black: #1e1e1e;
+            --accent: #d4e9e2;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 { color: var(--starbucks-green); text-align: center; }
+        .container {
+            width: 100%;
+            max-width: 900px;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        /* Scoreboard */
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            background: var(--starbucks-black);
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .team-score { text-align: center; }
+        .team-score span { display: block; font-size: 1.5em; font-weight: bold; }
+
+        /* Game Areas */
+        .phase-box {
+            border: 2px solid var(--accent);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none; /* Hidden by default */
+        }
+        .active { display: block; animation: fadeIn 0.5s; }
+
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        h2 { border-bottom: 2px solid var(--starbucks-green); padding-bottom: 5px; }
+
+        /* Buttons */
+        button {
+            background-color: var(--starbucks-green);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+            margin: 5px;
+            transition: transform 0.1s;
+        }
+        button:hover { transform: scale(1.05); background-color: #005c3d; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; transform: none; }
+
+        /* Options Grid */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .location-card {
+            background: #eee;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .location-card:hover { border-color: var(--starbucks-green); background: #e8f5e9; }
+        
+        /* Question Styles */
+        .question-text { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
+        .option-btn { display: block; width: 100%; margin: 5px 0; text-align: left; }
+
+        .result-log {
+            background: #fff3cd;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        
+        .ring-indicator {
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>☕ Geomarketing: La Conquista del Territorio</h1>
+
+    <div class="container">
+        <div class="scoreboard" id="scoreboard">
+            <div class="team-score">Equipo 1<span id="score-0">0</span></div>
+            <div class="team-score">Equipo 2<span id="score-1">0</span></div>
+            <div class="team-score">Equipo 3<span id="score-2">0</span></div>
+            <div class="team-score">Equipo 4<span id="score-3">0</span></div>
+        </div>
+
+        <div id="phase-start" class="phase-box active">
+            <h2>Inicio del Juego</h2>
+            <p>Bienvenidos. Vamos a competir por dominar el mercado del café utilizando estrategia de geomarketing.</p>
+            <p>Hay 3 Anillos (Niveles): Periferia, Ciudad y Zona Prime.</p>
+            <button onclick="startGame()">Lanzar dado para decidir quién empieza</button>
+        </div>
+
+        <div id="phase-question" class="phase-box">
+            <div class="ring-indicator" id="ring-display">ANILLO 1</div>
+            <h2 id="current-team-turn">Turno del Equipo X</h2>
+            <p class="question-text" id="q-text">Pregunta...</p>
+            <div id="q-options">
+                </div>
+        </div>
+
+        <div id="phase-selection" class="phase-box">
+            <h2>Selección de Ubicación</h2>
+            <p>El <strong id="picking-team">Equipo X</strong> elige ubicación.</p>
+            <p style="font-size: 0.9em; color: #666;">(Si acertaste, eliges antes. Si fallaste, eliges lo que queda).</p>
+            <div class="options-grid" id="location-options">
+                </div>
+        </div>
+
+        <div id="phase-round-end" class="phase-box">
+            <h2>Resultados del Anillo</h2>
+            <div id="round-results-table"></div>
+            <button onclick="nextRound()" style="margin-top: 15px;">Ir al siguiente Anillo</button>
+        </div>
+
+        <div id="phase-game-over" class="phase-box">
+            <h2>🏆 Fin de la Partida</h2>
+            <div id="final-winner" style="font-size: 2em; text-align: center; color: var(--starbucks-green); margin: 20px;"></div>
+            <button onclick="location.reload()">Jugar de nuevo</button>
+        </div>
+    </div>
+
+<script>
+    // --- DATOS DEL JUEGO (CONFIGURABLE) ---
+    
+    // Anillos y Ubicaciones (Puntos ocultos)
+    const rings = [
+        {
+            name: "Anillo 1: La Periferia (Residencial)",
+            locations: [
+                { name: "Centro Comercial (Food Court)", points: 500, reason: "Alto tráfico cautivo y ocio." },
+                { name: "Gasolinera en Autopista", points: 300, reason: "Paso rápido, pero ticket medio bajo." },
+                { name: "Barrio Dormitorio (Baja densidad)", points: 100, reason: "Solo funciona fines de semana. Poca rotación." },
+                { name: "Salida de Colegio Privado", points: 400, reason: "Padres esperando = Consumo alto de café." }
+            ]
+        },
+        {
+            name: "Anillo 2: Zona Urbana (Barrios)",
+            locations: [
+                { name: "Calle Peatonal Secundaria", points: 200, reason: "Poco flujo si no es la calle principal." },
+                { name: "Frente a un Starbucks Competidor", points: 600, reason: "¡Estrategia Clustering! Robas cola y ganas visibilidad." },
+                { name: "Junto a Boca de Metro", points: 500, reason: "Tráfico masivo de mañana (Take away)." },
+                { name: "Plaza con Parque Infantil", points: 300, reason: "Estancia larga pero consumo lento." }
+            ]
+        },
+        {
+            name: "Anillo 3: Nudos Críticos (Prime)",
+            locations: [
+                { name: "Aeropuerto (Terminal Salidas)", points: 1000, reason: "El 'Santo Grial'. Precios altos y clientes cautivos." },
+                { name: "Callejón sin salida en el Centro", points: 50, reason: "Sin visibilidad no hay venta por impulso." },
+                { name: "Distrito Financiero (Lobby Torre)", points: 800, reason: "Ticket alto diario y reuniones corporativas." },
+                { name: "Calle Comercial Turística", points: 700, reason: "Volumen masivo constante." }
+            ]
+        }
+    ];
+
+    // Banco de Preguntas
+    const questions = [
+        // R1 Questions
+        { t: "¿Qué variable analiza el geomarketing para definir el área de influencia real por tiempo?", options: ["Radio concéntrico", "Isócrona", "Código Postal", "Distrito"], correct: 1 },
+        { t: "Según el texto, ¿qué porcentaje de datos empresariales tiene componente geográfica?", options: ["20%", "50%", "80%", "10%"], correct: 2 },
+        { t: "¿Qué tipo de datos analiza la 'movilidad' en geomarketing?", options: ["Censo", "GPS y telefonía móvil", "Encuestas a pie de calle", "Tickets de venta"], correct: 1 },
+        { t: "¿Cómo se llama el fenómeno de abrir tiendas muy cerca unas de otras?", options: ["Marketing Mix", "Clustering (Saturación)", "Franquiciado", "Dumping"], correct: 1 },
+        
+        // R2 Questions
+        { t: "¿Qué es la 'población flotante'?", options: ["Gente que vive en barcos", "Residentes empadronados", "Personas que transitan pero no viven allí", "Turistas solo en verano"], correct: 2 },
+        { t: "¿Qué estrategia usa Inditex para cerrar tiendas pequeñas y abrir grandes?", options: ["Absorción / Flagships", "Franquicias", "E-commerce puro", "Low cost"], correct: 0 },
+        { t: "¿Qué busca el análisis de la 'Acera Buena'?", options: ["Donde da el sol", "El flujo peatonal direccional", "Donde hay más bancos", "Aceras más anchas"], correct: 1 },
+        { t: "La canibalización comercial se considera aceptable si...", options: ["Nunca es aceptable", "Bloquea a la competencia y sube ventas totales", "Es menor al 1%", "Los gerentes no se dan cuenta"], correct: 1 },
+
+        // R3 Questions
+        { t: "¿Qué es el Geofencing?", options: ["Vallas publicitarias", "Publicidad digital activada por ubicación GPS", "Seguridad en la tienda", "Mapas de calor"], correct: 1 },
+        { t: "¿Qué es el 'Share of Wallet'?", options: ["Cuota de mercado", "Cuota de bolsillo (gasto por hogar)", "Propina media", "Descuentos aplicados"], correct: 1 },
+        { t: "¿Qué busca una marca de lujo como Tiffany & Co?", options: ["Alta densidad de población", "Barrios jóvenes", "Alta renta y tráfico turístico", "Zonas de oficinas"], correct: 2 },
+        { t: "¿Qué tecnología usa Starbucks para su sistema Atlas?", options: ["Excel", "GIS (Sistemas de Información Geográfica)", "Google Maps básico", "Bloc de notas"], correct: 1 }
+    ];
+
+    // --- ESTADO DEL JUEGO ---
+    let currentRound = 0;
+    let scores = [0, 0, 0, 0];
+    let initialOrder = []; // [0, 1, 2, 3] mezclado
+    let selectionQueue = []; // Cola de quienes eligen primero (acertantes) y luego (fallantes)
+    let teamResultsCurrentRound = []; // Para guardar qué eligió cada uno
+    
+    // Variables temporales de la ronda
+    let questionIndex = 0; // 0 a 3 (dentro de la ronda)
+    let pickingIndex = 0; // índice en la selectionQueue
+    let currentPhase = 'start'; // start, question, selection, results
+    let winners = [];
+    let losers = [];
+
+    // --- LÓGICA ---
+
+    function showPhase(phaseId) {
+        document.querySelectorAll('.phase-box').forEach(el => el.classList.remove('active'));
+        document.getElementById(phaseId).classList.add('active');
+    }
+
+    function updateScoreboard() {
+        scores.forEach((s, i) => document.getElementById(`score-${i}`).innerText = s);
+    }
+
+    function shuffle(array) {
+        return array.sort(() => Math.random() - 0.5);
+    }
+
+    function startGame() {
+        initialOrder = shuffle([0, 1, 2, 3]);
+        currentRound = 0;
+        scores = [0, 0, 0, 0];
+        updateScoreboard();
+        startRound();
+    }
+
+    function startRound() {
+        if (currentRound >= rings.length) {
+            endGame();
+            return;
+        }
+
+        // Reset round vars
+        questionIndex = 0;
+        pickingIndex = 0;
+        winners = [];
+        losers = [];
+        teamResultsCurrentRound = [];
+        
+        // Copiar ubicaciones disponibles para ir eliminándolas
+        currentLocationsAvailable = [...rings[currentRound].locations];
+
+        document.getElementById('ring-display').innerText = rings[currentRound].name;
+        
+        // Empezamos preguntas
+        askQuestion();
+    }
+
+    function askQuestion() {
+        showPhase('phase-question');
+        
+        // Determinar qué equipo juega ahora (basado en orden inicial rotado si quisieramos, o fijo)
+        // Para simplificar, usamos el initialOrder como orden de preguntas
+        let currentTeam = initialOrder[questionIndex];
+        
+        document.getElementById('current-team-turn').innerText = `Turno del Equipo ${currentTeam + 1}`;
+        
+        // Seleccionar pregunta (calculo simple para no repetir: round * 4 + index)
+        let qData = questions[currentRound * 4 + questionIndex];
+        
+        document.getElementById('q-text').innerText = qData.t;
+        let optsDiv = document.getElementById('q-options');
+        optsDiv.innerHTML = '';
+
+        qData.options.forEach((opt, idx) => {
+            let btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.innerText = opt;
+            btn.onclick = () => answerQuestion(currentTeam, idx === qData.correct);
+            optsDiv.appendChild(btn);
+        });
+    }
+
+    function answerQuestion(teamId, isCorrect) {
+        if (isCorrect) {
+            winners.push(teamId);
+            alert("¡Correcto! Tendréis prioridad para elegir zona.");
+        } else {
+            losers.push(teamId);
+            alert("Incorrecto. Tendréis que esperar al final para elegir.");
+        }
+
+        questionIndex++;
+        if (questionIndex < 4) {
+            askQuestion();
+        } else {
+            // Fin de preguntas, pasamos a selección
+            startSelectionPhase();
+        }
+    }
+
+    function startSelectionPhase() {
+        // Construir la cola: Primero ganadores, luego perdedores
+        selectionQueue = [...winners, ...losers];
+        pickingIndex = 0;
+        showSelection();
+    }
+
+    function showSelection() {
+        showPhase('phase-selection');
+        let currentTeam = selectionQueue[pickingIndex];
+        document.getElementById('picking-team').innerText = `Equipo ${currentTeam + 1}`;
+        
+        let grid = document.getElementById('location-options');
+        grid.innerHTML = '';
+
+        currentLocationsAvailable.forEach((loc, idx) => {
+            let card = document.createElement('div');
+            card.className = 'location-card';
+            card.innerHTML = `<strong>${loc.name}</strong><br><small>??? Puntos</small>`;
+            card.onclick = () => pickLocation(currentTeam, idx);
+            grid.appendChild(card);
+        });
+    }
+
+    function pickLocation(teamId, locIndex) {
+        let pickedLoc = currentLocationsAvailable[locIndex];
+        
+        // Guardar resultado
+        teamResultsCurrentRound.push({
+            team: teamId,
+            locName: pickedLoc.name,
+            points: pickedLoc.points,
+            reason: pickedLoc.reason
+        });
+
+        // Sumar puntos
+        scores[teamId] += pickedLoc.points;
+        updateScoreboard();
+
+        // Quitar ubicación del array
+        currentLocationsAvailable.splice(locIndex, 1);
+
+        pickingIndex++;
+        if (pickingIndex < 4) {
+            showSelection();
+        } else {
+            showRoundResults();
+        }
+    }
+
+    function showRoundResults() {
+        showPhase('phase-round-end');
+        let container = document.getElementById('round-results-table');
+        container.innerHTML = '';
+
+        // Ordenar resultados para mostrar
+        teamResultsCurrentRound.forEach(res => {
+            let div = document.createElement('div');
+            div.className = 'result-log';
+            div.innerHTML = `
+                Equipo ${res.team + 1} eligió: <strong>${res.locName}</strong><br>
+                <span style="color:var(--starbucks-green)">+${res.points} Puntos</span><br>
+                <small><em>${res.reason}</em></small>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    function nextRound() {
+        // El orden para la siguiente ronda puede ser basado en puntuación, 
+        // pero para este juego simple mantendremos el dado inicial o rotaremos
+        // Vamos a rotar el orden inicial: el que fue primero ahora es último
+        initialOrder.push(initialOrder.shift());
+        
+        currentRound++;
+        startRound();
+    }
+
+    function endGame() {
+        showPhase('phase-game-over');
+        // Calcular ganador
+        let maxScore = Math.max(...scores);
+        let winnerIndices = scores.map((s, i) => s === maxScore ? i + 1 : null).filter(x => x);
+        
+        let text = "";
+        if (winnerIndices.length > 1) {
+            text = `¡Empate entre Equipos ${winnerIndices.join(' y ')}!`;
+        } else {
+            text = `¡Ganador: Equipo ${winnerIndices[0]}!`;
+        }
+        
+        document.getElementById('final-winner').innerText = text;
+    }
+
+</script>
+
+</body>
+</html>
