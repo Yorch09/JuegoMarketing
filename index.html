@@ -3,14 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Starbucks Geomarketing Board Game</title>
+    <title>Starbucks Geomarketing: Batalla Final</title>
     <style>
         :root {
             --bg-color: #1e1e1e;
-            --board-bg: #eaddcf;
-            --ring-1: #c8b7a6;
-            --ring-2: #a09383;
-            --ring-3: #756a5b;
             --sb-green: #00704A;
             --t1: #e74c3c; /* Rojo */
             --t2: #3498db; /* Azul */
@@ -19,7 +15,7 @@
         }
 
         body {
-            font-family: 'Helvetica Neue', sans-serif;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
             background-color: var(--bg-color);
             color: white;
             margin: 0;
@@ -28,43 +24,45 @@
             overflow: hidden;
         }
 
-        /* --- SIDEBAR (Panel Lateral) --- */
+        /* --- SIDEBAR --- */
         #sidebar {
-            width: 300px;
+            width: 250px;
             background: #2c3e50;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             box-shadow: 4px 0 10px rgba(0,0,0,0.5);
             z-index: 10;
         }
 
-        h1 { font-size: 1.5rem; margin-bottom: 20px; color: var(--sb-green); text-transform: uppercase; letter-spacing: 2px; }
+        h1 { font-size: 1.2rem; color: var(--sb-green); text-transform: uppercase; letter-spacing: 1px; text-align: center;}
         
         .score-box {
             background: rgba(255,255,255,0.1);
-            padding: 10px;
-            margin-bottom: 10px;
-            border-radius: 8px;
+            padding: 8px;
+            margin-bottom: 8px;
+            border-radius: 6px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            font-size: 0.9rem;
         }
-        .team-indicator { width: 15px; height: 15px; border-radius: 50%; display: inline-block; margin-right: 10px; }
+        .team-indicator { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 10px; }
         .t1 { background: var(--t1); } .t2 { background: var(--t2); }
         .t3 { background: var(--t3); } .t4 { background: var(--t4); }
 
         #game-log {
             margin-top: auto;
-            height: 200px;
+            height: 150px;
             overflow-y: auto;
             background: rgba(0,0,0,0.3);
             padding: 10px;
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             border-radius: 5px;
+            font-family: monospace;
         }
 
-        /* --- MAIN AREA (Tablero) --- */
+        /* --- MAIN AREA --- */
         #main-area {
             flex-grow: 1;
             position: relative;
@@ -74,14 +72,16 @@
             background: radial-gradient(circle, #333 10%, #111 90%);
         }
 
-        /* TABLERO CIRCULAR */
+        /* TABLERO RESPONSIVE (Usa vh para no salirse) */
         #board-container {
             position: relative;
-            width: 700px;
-            height: 700px;
+            /* El tablero será un cuadrado basado en la altura de la pantalla */
+            width: 85vh; 
+            height: 85vh;
+            max-width: 800px;
+            max-height: 800px;
         }
 
-        /* Anillos */
         .ring {
             position: absolute;
             border-radius: 50%;
@@ -90,81 +90,74 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            border: 2px dashed rgba(255,255,255,0.2);
+            border: 2px dashed rgba(255,255,255,0.15);
             transition: all 0.5s;
         }
 
-        /* Dimensiones de los anillos */
-        #ring-outer { width: 650px; height: 650px; background-color: rgba(255, 255, 255, 0.05); z-index: 1; }
-        #ring-middle { width: 450px; height: 450px; background-color: rgba(255, 255, 255, 0.1); z-index: 2; }
-        #ring-inner { width: 250px; height: 250px; background-color: rgba(255, 255, 255, 0.15); z-index: 3; }
+        /* Tamaños relativos al contenedor padre */
+        #ring-outer { width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.02); z-index: 1; }
+        #ring-middle { width: 70%; height: 70%; background-color: rgba(255, 255, 255, 0.05); z-index: 2; }
+        #ring-inner { width: 40%; height: 40%; background-color: rgba(255, 255, 255, 0.08); z-index: 3; }
         
-        /* Etiquetas de Anillo */
         .ring-label {
             position: absolute;
-            top: 20px;
+            top: 10%;
             font-weight: bold;
             text-transform: uppercase;
-            color: rgba(255,255,255,0.4);
+            color: rgba(255,255,255,0.3);
             font-size: 0.8rem;
+            pointer-events: none;
         }
 
-        /* SLOTS (Las casillas donde se juega) */
+        /* SLOTS */
         .slot {
             position: absolute;
-            width: 100px;
-            height: 60px;
-            background: white;
+            width: 18%; /* Relativo al tablero */
+            height: 10%;
+            background: #f0f0f0;
             color: #333;
-            border-radius: 6px;
+            border-radius: 4px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: bold;
             text-align: center;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
-            transition: transform 0.2s, background 0.3s;
-            padding: 5px;
-            border: 2px solid transparent;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+            padding: 2px;
             z-index: 10;
         }
         
-        .slot:hover { transform: scale(1.1); z-index: 20; }
-        .slot.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(100%); }
+        .slot:hover { transform: scale(1.1); z-index: 20; background: white;}
         .slot.occupied { color: white; border: 2px solid white; transform: scale(1); cursor: default; }
 
-        /* Posicionamiento de Slots (Top, Right, Bottom, Left) */
-        .pos-top { top: 0; left: 50%; transform: translate(-50%, -20%); }
-        .pos-right { top: 50%; right: 0; transform: translate(20%, -50%); }
-        .pos-bottom { bottom: 0; left: 50%; transform: translate(-50%, 20%); }
-        .pos-left { top: 50%; left: 0; transform: translate(-20%, -50%); }
+        /* Posiciones */
+        .pos-top { top: 0; left: 50%; transform: translate(-50%, 20%); }
+        .pos-right { top: 50%; right: 0; transform: translate(-20%, -50%); }
+        .pos-bottom { bottom: 0; left: 50%; transform: translate(-50%, -20%); }
+        .pos-left { top: 50%; left: 0; transform: translate(20%, -50%); }
 
-        /* Ajuste para anillo interior que es más pequeño */
-        #ring-inner .pos-top { transform: translate(-50%, -50%); }
-        #ring-inner .pos-right { transform: translate(50%, -50%); }
-        #ring-inner .pos-bottom { transform: translate(-50%, 50%); }
-        #ring-inner .pos-left { transform: translate(-50%, -50%); }
+        /* Ajustes visuales específicos para que no se solapen */
+        #ring-inner .pos-top { transform: translate(-50%, -20%); } 
 
-
-        /* Puntos revelados */
         .points-badge {
             display: none;
             background: #f1c40f;
             color: black;
-            border-radius: 4px;
-            padding: 2px 5px;
-            margin-top: 3px;
-            font-size: 0.9em;
+            border-radius: 3px;
+            padding: 1px 4px;
+            margin-top: 2px;
+            font-size: 0.8em;
         }
 
-        /* --- MODAL (Preguntas y Avisos) --- */
+        /* --- MODAL --- */
         #modal-overlay {
             position: fixed;
             top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
+            background: rgba(0,0,0,0.9);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -175,55 +168,42 @@
             background: white;
             color: #333;
             width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
             padding: 30px;
-            border-radius: 15px;
+            border-radius: 10px;
             text-align: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            border-top: 10px solid var(--sb-green);
+            border-top: 8px solid var(--sb-green);
         }
         .hidden { display: none !important; }
 
-        /* Botones del Modal */
         .opt-btn {
-            display: block;
-            width: 100%;
-            padding: 15px;
-            margin: 10px 0;
-            background: #f4f4f4;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 1rem;
-            text-align: left;
+            display: block; width: 100%; padding: 12px; margin: 8px 0;
+            background: #eee; border: none; border-radius: 4px;
+            cursor: pointer; text-align: left; font-size: 1rem;
             transition: background 0.2s;
         }
-        .opt-btn:hover { background: #e0e0e0; border-left: 5px solid var(--sb-green); }
+        .opt-btn:hover { background: #ddd; border-left: 5px solid var(--sb-green); }
         
         #action-btn {
-            background: var(--sb-green);
-            color: white;
-            border: none;
-            padding: 10px 30px;
-            font-size: 1.2rem;
-            border-radius: 30px;
-            cursor: pointer;
-            margin-top: 20px;
+            background: var(--sb-green); color: white; border: none;
+            padding: 10px 25px; font-size: 1.1rem; border-radius: 20px;
+            cursor: pointer; margin-top: 15px;
         }
-        #action-btn:hover { background: #00583a; }
 
-        /* Status Banner */
         #status-bar {
-            position: absolute;
-            top: 20px;
-            background: white;
-            color: black;
-            padding: 10px 30px;
-            border-radius: 30px;
-            font-weight: bold;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            font-size: 1.2rem;
-            z-index: 50;
+            position: absolute; top: 15px; background: white; color: black;
+            padding: 8px 20px; border-radius: 20px; font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 50;
         }
+
+        /* Tabla de resultados */
+        .results-table {
+            width: 100%; text-align: left; margin-top: 15px; border-collapse: collapse;
+        }
+        .results-table th { border-bottom: 2px solid #ccc; padding: 5px; }
+        .results-table td { border-bottom: 1px solid #eee; padding: 8px 5px; font-size: 0.9rem; }
+        .reason-text { font-style: italic; color: #666; font-size: 0.85rem; display: block; margin-top: 2px;}
 
     </style>
 </head>
@@ -231,311 +211,339 @@
 
 <div id="sidebar">
     <h1>Geo-Battle</h1>
-    
     <div class="score-box" id="sb-0"><div style="display:flex;align-items:center"><span class="team-indicator t1"></span>Equipo 1</div><span id="sc-0">0</span></div>
     <div class="score-box" id="sb-1"><div style="display:flex;align-items:center"><span class="team-indicator t2"></span>Equipo 2</div><span id="sc-1">0</span></div>
     <div class="score-box" id="sb-2"><div style="display:flex;align-items:center"><span class="team-indicator t3"></span>Equipo 3</div><span id="sc-2">0</span></div>
     <div class="score-box" id="sb-3"><div style="display:flex;align-items:center"><span class="team-indicator t4"></span>Equipo 4</div><span id="sc-3">0</span></div>
-
-    <div id="game-log">
-        <p>> Juego Iniciado</p>
-        <p>> Esperando lanzamiento...</p>
-    </div>
+    <div id="game-log"></div>
 </div>
 
 <div id="main-area">
-    <div id="status-bar">Fase de Preparación</div>
+    <div id="status-bar">Preparando la Batalla...</div>
 
     <div id="board-container">
         <div class="ring" id="ring-outer">
             <span class="ring-label">Periferia</span>
-            </div>
-
+        </div>
         <div class="ring" id="ring-middle">
             <span class="ring-label">Ciudad</span>
-            </div>
-
+        </div>
         <div class="ring" id="ring-inner">
             <span class="ring-label">Prime</span>
-            </div>
+        </div>
     </div>
 </div>
 
 <div id="modal-overlay">
     <div class="modal-content">
-        <h2 id="modal-title">Bienvenidos</h2>
-        <p id="modal-desc">Este es un juego de estrategia de localización. ¿Listos?</p>
+        <h2 id="modal-title">Starbucks Geo-Challenge</h2>
+        <div id="modal-body">
+            <p>Bienvenido a la simulación de expansión comercial.</p>
+            <p>Competiréis por las mejores ubicaciones.</p>
+        </div>
         <div id="modal-options"></div>
-        <button id="action-btn" onclick="startGame()">Empezar Partida</button>
+        <button id="action-btn" onclick="startGame()">Comenzar</button>
     </div>
 </div>
 
 <script>
-    // --- CONFIGURACIÓN DE DATOS ---
+    // --- DATOS EDUCATIVOS COMPLETOS ---
     const teams = [
-        { name: "Equipo 1", color: "var(--t1)", score: 0 },
-        { name: "Equipo 2", color: "var(--t2)", score: 0 },
-        { name: "Equipo 3", color: "var(--t3)", score: 0 },
-        { name: "Equipo 4", color: "var(--t4)", score: 0 }
+        { name: "Equipo 1", color: "#e74c3c", score: 0 },
+        { name: "Equipo 2", color: "#3498db", score: 0 },
+        { name: "Equipo 3", color: "#f1c40f", score: 0 },
+        { name: "Equipo 4", color: "#9b59b6", score: 0 }
     ];
 
     const locationsData = [
         {
             ringId: "ring-outer",
+            name: "PERIFERIA",
             places: [
-                { name: "Centro Comercial", points: 500, pos: "pos-top" },
-                { name: "Gasolinera", points: 200, pos: "pos-right" },
-                { name: "Barrio Dormitorio", points: 100, pos: "pos-bottom" },
-                { name: "Colegio Privado", points: 400, pos: "pos-left" }
+                { name: "C. Comercial", points: 500, pos: "pos-top", reason: "Generador de tráfico de ocio y compras (Mix comercial)." },
+                { name: "Gasolinera", points: 200, pos: "pos-right", reason: "Tráfico rápido, ticket bajo y sin estancia." },
+                { name: "Barrio Dormitorio", points: 50, pos: "pos-bottom", reason: "Vacío en horario laboral. Solo funciona fines de semana." },
+                { name: "Salida Colegio", points: 400, pos: "pos-left", reason: "Pico muy alto de demanda a las 16:00 (padres)." }
             ]
         },
         {
             ringId: "ring-middle",
+            name: "CIUDAD",
             places: [
-                { name: "Junto a Competencia", points: 600, pos: "pos-top" },
-                { name: "Calle Secundaria", points: 150, pos: "pos-right" },
-                { name: "Metro / Bus", points: 500, pos: "pos-bottom" },
-                { name: "Parque", points: 250, pos: "pos-left" }
+                { name: "Junto a Rival", points: 600, pos: "pos-top", reason: "CLUSTERING: Capturas su cola y generas 'zona cafetera'." },
+                { name: "Calle Secundaria", points: 150, pos: "pos-right", reason: "Poco flujo natural. Requiere mucha inversión en publi." },
+                { name: "Boca de Metro", points: 500, pos: "pos-bottom", reason: "Volumen masivo de Take-Away por la mañana." },
+                { name: "Parque", points: 250, pos: "pos-left", reason: "Estancia agradable, pero baja rotación de mesas." }
             ]
         },
         {
             ringId: "ring-inner",
+            name: "ZONA PRIME",
             places: [
-                { name: "Aeropuerto", points: 1000, pos: "pos-top" },
-                { name: "Callejón Centro", points: 50, pos: "pos-right" },
-                { name: "Torre Oficinas", points: 800, pos: "pos-bottom" },
-                { name: "Plaza Turística", points: 700, pos: "pos-left" }
+                { name: "Aeropuerto", points: 1000, pos: "pos-top", reason: "Cliente cautivo + Tiempos de espera + Precios altos." },
+                { name: "Callejón", points: 0, pos: "pos-right", reason: "Sin visibilidad no hay venta por impulso en zona prime." },
+                { name: "Torre Oficinas", points: 800, pos: "pos-bottom", reason: "Alta recurrencia diaria y ticket de reuniones." },
+                { name: "Plaza Turística", points: 700, pos: "pos-left", reason: "Flujo constante, pero alquileres muy caros." }
             ]
         }
     ];
 
     const questions = [
-        { q: "¿Qué mide una isócrona?", opts: ["Distancia en km", "Tiempo de viaje", "Densidad", "Ventas"], a: 1 },
-        { q: "¿Qué es el efecto clustering?", opts: ["Dispersión", "Agrupamiento denso", "Venta online", "Franquicia"], a: 1 },
-        { q: "¿Qué dato NO es demográfico?", opts: ["Edad", "Renta", "Flujo peatonal", "Sexo"], a: 2 },
-        { q: "La canibalización es buena si...", opts: ["Se pierde dinero", "Sube el total zonal", "Cierra el local", "Baja el alquiler"], a: 1 },
-        
-        { q: "¿Qué es Población Flotante?", opts: ["Vive en la zona", "Pasa por la zona", "Trabaja online", "No gasta"], a: 1 },
-        { q: "¿Locomotora comercial es...?", opts: ["Un tren", "Una tienda ancla", "Un camión", "Un parking"], a: 1 },
-        { q: "¿Qué busca el análisis de acera?", opts: ["Sombra", "Flujo direccional", "Anchura", "Limpieza"], a: 1 },
-        { q: "En oficinas, ¿qué importa más?", opts: ["Comodidad", "Rapidez", "Wifi", "Decoración"], a: 1 },
-
-        { q: "¿Geofencing usa...?", opts: ["Vallas físicas", "GPS/Móvil", "Email", "Encuestas"], a: 1 },
-        { q: "Share of Wallet es...", opts: ["Cuota de mercado", "Gasto por cliente", "Coste", "Beneficio"], a: 1 },
-        { q: "¿Sistema usado por Starbucks?", opts: ["Atlas (GIS)", "Excel", "Google Earth", "Maps"], a: 0 },
-        { q: "¿Objetivo del geomarketing?", opts: ["Hacer mapas", "Inteligencia territorial", "Diseño", "Vender casas"], a: 1 }
+        // R1
+        { q: "¿Qué define mejor una Isócrona?", opts: ["Distancia en línea recta", "Área delimitada por tiempo de viaje", "Barrio administrativo", "Zona de reparto"], a: 1 },
+        { q: "El 'Efecto Starbucks' de clustering busca...", opts: ["Cerrar tiendas", "Saturar para reducir colas y bloquear rivales", "Bajar precios", "Vender solo online"], a: 1 },
+        { q: "¿Qué dato usa el Big Data para movilidad?", opts: ["Encuestas en papel", "Señal GPS y móvil", "Censo de 2010", "Número de ventanas"], a: 1 },
+        { q: "En retail, la 'canibalización' es...", opts: ["Mala siempre", "Aceptable si la venta total de zona sube", "Ilegal", "Comer en la tienda"], a: 1 },
+        // R2
+        { q: "¿Qué es la Población Flotante?", opts: ["Gente que vive en la zona", "Turistas y trabajadores no residentes", "Población que varía de peso", "Clientes online"], a: 1 },
+        { q: "¿Qué mide la 'Cuota de Bolsillo'?", opts: ["El tamaño de la cartera", "Gasto de un hogar en tu categoría", "Propinas", "Beneficio neto"], a: 1 },
+        { q: "Una 'Locomotora Comercial' es...", opts: ["Un Zara o Apple que atrae gente", "Una estación de tren", "Un camión de reparto", "Una tienda que cierra pronto"], a: 0 },
+        { q: "En zona de oficinas, la clave es...", opts: ["Sofás cómodos", "Rapidez y servicio express", "Zona infantil", "Música alta"], a: 1 },
+        // R3
+        { q: "El Geomarketing ayuda a...", opts: ["Hacer mapas bonitos", "Predecir facturación antes de abrir", "Decorar el local", "Contratar camareros"], a: 1 },
+        { q: "¿Qué es Geofencing?", opts: ["Vallas de seguridad", "Publicidad activada por ubicación GPS", "Diseño de interiores", "Robo de clientes"], a: 1 },
+        { q: "Para una marca de lujo importa...", opts: ["Mucha gente", "Alta renta y turismo", "Estar cerca de colegios", "Parking gratis"], a: 1 },
+        { q: "¿Por qué Starbucks abre dos tiendas juntas?", opts: ["Por error", "Para reducir tiempos de espera", "Porque sobraba dinero", "Para competir entre gerentes"], a: 1 }
     ];
 
-    // --- VARIABLES DE ESTADO ---
-    let currentRound = 0; // 0, 1, 2
+    // --- ESTADO ---
+    let currentRound = 0;
     let questionIdx = 0;
     let turnOrder = [];
-    let selectionQueue = [];
-    let currentPhase = 'idle'; 
+    let winnersQueue = []; // Cola de los que aciertan (PRIORIDAD)
+    let losersQueue = [];  // Cola de los que fallan
+    let finalSelectionQueue = []; 
+    let pickedLog = []; // Registro de selecciones de la ronda actual
 
-    // --- FUNCIONES DE UI ---
+    // --- LÓGICA ---
+
     function log(msg) {
         let box = document.getElementById('game-log');
-        box.innerHTML += `<p>> ${msg}</p>`;
+        box.innerHTML += `> ${msg}<br>`;
         box.scrollTop = box.scrollHeight;
     }
 
     function updateScores() {
-        teams.forEach((t, i) => {
-            document.getElementById(`sc-${i}`).innerText = t.score;
-        });
+        teams.forEach((t, i) => document.getElementById(`sc-${i}`).innerText = t.score);
     }
 
-    function setStatus(msg) {
-        document.getElementById('status-bar').innerText = msg;
-    }
+    function setStatus(msg) { document.getElementById('status-bar').innerText = msg; }
 
-    function renderBoard(round) {
-        // Limpia slots antiguos y activa visualmente el anillo actual
+    function renderBoard(roundIdx) {
+        // Reset visual
         document.querySelectorAll('.ring').forEach(r => {
-            r.innerHTML = `<span class="ring-label">${r.querySelector('.ring-label').innerText}</span>`; // Keep label, clear slots
-            r.style.borderColor = "rgba(255,255,255,0.1)";
-            r.style.opacity = "0.3";
+            r.style.borderColor = "rgba(255,255,255,0.15)";
+            r.style.opacity = "0.4";
+            // Limpiar slots viejos pero mantener label
+            let label = r.querySelector('.ring-label').innerText;
+            r.innerHTML = `<span class="ring-label">${label}</span>`;
         });
 
-        // Highlight current ring
-        let activeRingData = locationsData[round];
-        let ringEl = document.getElementById(activeRingData.ringId);
+        // Activar anillo actual
+        let activeData = locationsData[roundIdx];
+        let ringEl = document.getElementById(activeData.ringId);
         ringEl.style.borderColor = "var(--sb-green)";
         ringEl.style.opacity = "1";
-        ringEl.style.boxShadow = "0 0 20px rgba(0,255,100,0.1)";
-
-        // Create Slots
-        activeRingData.places.forEach((place, idx) => {
+        
+        // Crear Slots
+        activeData.places.forEach((p, idx) => {
             let slot = document.createElement('div');
-            slot.className = `slot ${place.pos}`;
-            slot.innerHTML = `<div>${place.name}</div><div class="points-badge">+${place.points}</div>`;
-            slot.dataset.points = place.points;
-            slot.dataset.idx = idx;
+            slot.className = `slot ${p.pos}`;
+            slot.innerHTML = `<div>${p.name}</div><div class="points-badge">+${p.points}</div>`;
             slot.onclick = () => handleSlotClick(slot, idx);
+            // Datos ocultos en el elemento
+            slot.dataset.points = p.points;
+            slot.dataset.reason = p.reason;
+            slot.dataset.idx = idx;
             ringEl.appendChild(slot);
         });
     }
 
-    // --- LÓGICA DEL JUEGO ---
-
     function startGame() {
         document.getElementById('modal-overlay').classList.add('hidden');
         currentRound = 0;
-        // Orden aleatorio inicial
+        // Orden aleatorio de equipos
         turnOrder = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
-        log("Orden de turno aleatorio: " + turnOrder.map(i => teams[i].name).join(", "));
+        log("Orden sorteado: " + turnOrder.map(i => teams[i].name).join(", "));
         startRound();
     }
 
     function startRound() {
         if(currentRound >= 3) { endGame(); return; }
         
-        setStatus(`Ronda ${currentRound + 1}: ${locationsData[currentRound].ringId.replace('ring-', '').toUpperCase()}`);
-        log(`--- INICIO RONDA ${currentRound + 1} ---`);
-        
+        // Reset colas
+        winnersQueue = [];
+        losersQueue = [];
+        pickedLog = [];
+        questionIdx = 0;
+
         renderBoard(currentRound);
+        let ringName = locationsData[currentRound].name;
+        setStatus(`Ronda ${currentRound + 1}: ${ringName}`);
+        log(`--- INICIO ${ringName} ---`);
         
-        // Reset queues
-        selectionQueue = []; 
-        questionIdx = 0; // Dentro de la ronda
-        
-        // Start Question Phase
-        playQuestionTurn();
+        playQuestion();
     }
 
-    function playQuestionTurn() {
+    function playQuestion() {
         if(questionIdx >= 4) {
-            // Fin de preguntas, vamos a selección
             startSelectionPhase();
             return;
         }
 
         let teamIdx = turnOrder[questionIdx];
-        let qIndexGlobal = (currentRound * 4) + questionIdx;
-        let q = questions[qIndexGlobal];
+        let qData = questions[(currentRound * 4) + questionIdx];
 
-        showModalQuestion(teams[teamIdx].name, q, (isCorrect) => {
-            if(isCorrect) {
+        showModalQuestion(teams[teamIdx], qData, (correct) => {
+            if(correct) {
                 log(`${teams[teamIdx].name} acertó.`);
-                selectionQueue.unshift(teamIdx); // Pone al principio
+                winnersQueue.push(teamIdx); // Se añade al final de la lista de ganadores
             } else {
                 log(`${teams[teamIdx].name} falló.`);
-                selectionQueue.push(teamIdx); // Pone al final
+                losersQueue.push(teamIdx);
             }
             questionIdx++;
-            playQuestionTurn();
+            playQuestion();
         });
     }
 
-    function showModalQuestion(teamName, qData, cb) {
+    function showModalQuestion(team, qData, cb) {
         let m = document.getElementById('modal-overlay');
         let title = document.getElementById('modal-title');
-        let desc = document.getElementById('modal-desc');
+        let body = document.getElementById('modal-body');
         let opts = document.getElementById('modal-options');
         let btn = document.getElementById('action-btn');
 
         m.classList.remove('hidden');
-        title.innerText = `Turno: ${teamName}`;
-        title.style.color = teams[turnOrder[questionIdx]].color; // Team color
-        desc.innerText = qData.q;
-        btn.style.display = 'none';
+        title.innerText = `Turno: ${team.name}`;
+        title.style.color = team.color;
+        body.innerHTML = `<p style="font-size:1.2rem; font-weight:bold">${qData.q}</p>`;
         
         opts.innerHTML = '';
-        qData.opts.forEach((opt, idx) => {
+        btn.style.display = 'none';
+
+        qData.opts.forEach((txt, i) => {
             let b = document.createElement('button');
             b.className = 'opt-btn';
-            b.innerText = opt;
+            b.innerText = txt;
             b.onclick = () => {
                 m.classList.add('hidden');
-                cb(idx === qData.a);
+                cb(i === qData.a);
             };
             opts.appendChild(b);
         });
     }
 
-    // --- FASE DE SELECCIÓN EN EL TABLERO ---
-    
-    let pickingIdx = 0;
+    // --- FASE SELECCIÓN ---
+    let pickCounter = 0;
 
     function startSelectionPhase() {
-        pickingIdx = 0;
-        log("Fase de Selección: El tablero está activo.");
+        // Combinamos colas: PRIMERO los ganadores (en orden), LUEGO los perdedores
+        finalSelectionQueue = [...winnersQueue, ...losersQueue];
+        pickCounter = 0;
+        
+        log("Orden de elección: " + finalSelectionQueue.map(i => teams[i].name).join(", "));
         nextPick();
     }
 
     function nextPick() {
-        if(pickingIdx >= 4) {
-            endRound();
+        if(pickCounter >= 4) {
+            endRoundSummary();
             return;
         }
-        
-        let teamIdx = selectionQueue[pickingIdx];
+
+        let teamIdx = finalSelectionQueue[pickCounter];
         let team = teams[teamIdx];
         
-        setStatus(`Turno de Selección: ${team.name}`);
+        setStatus(`Eligiendo: ${team.name}`);
         
-        // Modal pequeño informativo
+        // Modal aviso
         let m = document.getElementById('modal-overlay');
-        let title = document.getElementById('modal-title');
-        let desc = document.getElementById('modal-desc');
-        let opts = document.getElementById('modal-options');
-        let btn = document.getElementById('action-btn');
-
         m.classList.remove('hidden');
-        title.innerText = `¡A elegir sitio!`;
-        title.style.color = team.color;
-        desc.innerText = `${team.name}, haz clic en una ubicación disponible en el anillo iluminado.`;
-        opts.innerHTML = '';
-        btn.style.display = 'block';
+        document.getElementById('modal-title').innerText = "Momento de Decisión";
+        document.getElementById('modal-title').style.color = team.color;
+        document.getElementById('modal-body').innerHTML = `
+            <p><strong>${team.name}</strong> tiene el turno.</p>
+            <p>Elige una ubicación disponible en el anillo iluminado.</p>
+        `;
+        document.getElementById('modal-options').innerHTML = '';
+        let btn = document.getElementById('action-btn');
+        btn.style.display = 'inline-block';
         btn.innerText = "Ir al Mapa";
         btn.onclick = () => {
             m.classList.add('hidden');
-            enableBoardInteraction(teamIdx);
-        }
+            document.body.dataset.pickingTeam = teamIdx; // Flag
+        };
     }
 
-    function enableBoardInteraction(teamIdx) {
-        // Marcamos el estado global
-        currentPhase = 'picking';
-        document.body.dataset.activeTeam = teamIdx; // Para saber quién clica
-    }
+    function handleSlotClick(slot, idx) {
+        let teamIdx = document.body.dataset.pickingTeam;
+        if(teamIdx === undefined || teamIdx === "") return;
+        if(slot.classList.contains('occupied')) return; // Ya cogido
 
-    function handleSlotClick(slotElement, locIdx) {
-        if(currentPhase !== 'picking') return;
-        if(slotElement.classList.contains('occupied')) return;
-
-        let teamIdx = parseInt(document.body.dataset.activeTeam);
+        // Procesar click
         let team = teams[teamIdx];
-        let points = parseInt(slotElement.dataset.points);
+        let pts = parseInt(slot.dataset.points);
+        let reason = slot.dataset.reason;
+        let name = slot.innerText.split('\n')[0];
 
-        // Visual update
-        slotElement.classList.add('occupied');
-        slotElement.style.background = team.color;
-        slotElement.style.borderColor = "white";
-        
-        // Logic Update
-        team.score += points;
+        // Visual
+        slot.classList.add('occupied');
+        slot.style.backgroundColor = team.color;
+        slot.style.borderColor = "white";
+        slot.style.color = "white";
+
+        // Logic
+        team.score += pts;
         updateScores();
-        log(`${team.name} ocupó ${slotElement.innerText.split('\n')[0]}`);
+        log(`${team.name} eligió ${name}`);
+        
+        // Guardar para resumen
+        pickedLog.push({ tName: team.name, tColor: team.color, loc: name, pts: pts, r: reason });
 
-        // Next
-        currentPhase = 'idle';
-        pickingIdx++;
+        // Limpiar flag y siguiente
+        document.body.dataset.pickingTeam = "";
+        pickCounter++;
         nextPick();
     }
 
-    function endRound() {
-        // Revelar puntos
-        document.querySelectorAll('.points-badge').forEach(el => el.style.display = 'block');
+    function endRoundSummary() {
+        // Mostrar puntos en tablero
+        document.querySelectorAll('.points-badge').forEach(b => b.style.display = 'block');
+
+        // Construir tabla de resumen educativo
+        let html = `<p>Resultados del Anillo ${locationsData[currentRound].name}</p>
+                    <table class="results-table">
+                        <tr><th>Equipo</th><th>Lugar</th><th>Puntos</th><th>¿Por qué?</th></tr>`;
         
+        pickedLog.forEach(row => {
+            html += `<tr>
+                <td style="color:${row.tColor}; font-weight:bold">${row.tName}</td>
+                <td>${row.loc}</td>
+                <td><b>${row.pts}</b></td>
+                <td><span class="reason-text">${row.r}</span></td>
+            </tr>`;
+        });
+        html += `</table>`;
+
+        // Mostrar Modal Resumen
         setTimeout(() => {
-            alert("Fin de Ronda. ¡Mira los puntos conseguidos!");
-            // Rotar orden para la siguiente
-            turnOrder.push(turnOrder.shift());
-            currentRound++;
-            startRound();
-        }, 2000);
+            let m = document.getElementById('modal-overlay');
+            m.classList.remove('hidden');
+            document.getElementById('modal-title').innerText = "Análisis de Resultados";
+            document.getElementById('modal-title').style.color = "var(--sb-green)";
+            document.getElementById('modal-body').innerHTML = html;
+            document.getElementById('modal-options').innerHTML = '';
+            
+            let btn = document.getElementById('action-btn');
+            btn.innerText = "Siguiente Ronda";
+            btn.onclick = () => {
+                // Rotar orden inicial para equidad en preguntas
+                turnOrder.push(turnOrder.shift());
+                currentRound++;
+                startRound();
+            };
+        }, 1000);
     }
 
     function endGame() {
@@ -544,18 +552,16 @@
         
         let m = document.getElementById('modal-overlay');
         m.classList.remove('hidden');
-        document.getElementById('modal-options').innerHTML = '';
-        document.getElementById('action-btn').innerText = "Reiniciar";
-        document.getElementById('action-btn').onclick = () => location.reload();
+        document.getElementById('modal-title').innerText = "¡FIN DE LA PARTIDA!";
+        document.getElementById('modal-title').style.color = "gold";
         
-        let title = document.getElementById('modal-title');
-        title.innerText = "¡FIN DEL JUEGO!";
-        title.style.color = "gold";
-        
-        document.getElementById('modal-desc').innerHTML = `
-            <h1>Ganador: ${winners.map(w => w.name).join(' y ')}</h1>
-            <p>Puntuación Final: ${max} puntos</p>
+        let wNames = winners.map(w => w.name).join(" y ");
+        document.getElementById('modal-body').innerHTML = `
+            <h1 style="font-size:2rem; color:${winners[0].color}">${wNames}</h1>
+            <p>Dominio total del mercado con ${max} puntos.</p>
         `;
+        document.getElementById('action-btn').innerText = "Reiniciar Juego";
+        document.getElementById('action-btn').onclick = () => location.reload();
     }
 
 </script>
