@@ -3,413 +3,561 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Geomarketing Challenge: La Estrategia</title>
+    <title>Starbucks Geomarketing Board Game</title>
     <style>
         :root {
-            --starbucks-green: #00704A;
-            --starbucks-black: #1e1e1e;
-            --accent: #d4e9e2;
+            --bg-color: #1e1e1e;
+            --board-bg: #eaddcf;
+            --ring-1: #c8b7a6;
+            --ring-2: #a09383;
+            --ring-3: #756a5b;
+            --sb-green: #00704A;
+            --t1: #e74c3c; /* Rojo */
+            --t2: #3498db; /* Azul */
+            --t3: #f1c40f; /* Amarillo */
+            --t4: #9b59b6; /* Morado */
         }
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f4f4;
-            color: #333;
+            font-family: 'Helvetica Neue', sans-serif;
+            background-color: var(--bg-color);
+            color: white;
             margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- SIDEBAR (Panel Lateral) --- */
+        #sidebar {
+            width: 300px;
+            background: #2c3e50;
             padding: 20px;
             display: flex;
             flex-direction: column;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.5);
+            z-index: 10;
+        }
+
+        h1 { font-size: 1.5rem; margin-bottom: 20px; color: var(--sb-green); text-transform: uppercase; letter-spacing: 2px; }
+        
+        .score-box {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
             align-items: center;
         }
-        h1 { color: var(--starbucks-green); text-align: center; }
-        .container {
-            width: 100%;
-            max-width: 900px;
+        .team-indicator { width: 15px; height: 15px; border-radius: 50%; display: inline-block; margin-right: 10px; }
+        .t1 { background: var(--t1); } .t2 { background: var(--t2); }
+        .t3 { background: var(--t3); } .t4 { background: var(--t4); }
+
+        #game-log {
+            margin-top: auto;
+            height: 200px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.3);
+            padding: 10px;
+            font-size: 0.85rem;
+            border-radius: 5px;
+        }
+
+        /* --- MAIN AREA (Tablero) --- */
+        #main-area {
+            flex-grow: 1;
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: radial-gradient(circle, #333 10%, #111 90%);
+        }
+
+        /* TABLERO CIRCULAR */
+        #board-container {
+            position: relative;
+            width: 700px;
+            height: 700px;
+        }
+
+        /* Anillos */
+        .ring {
+            position: absolute;
+            border-radius: 50%;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px dashed rgba(255,255,255,0.2);
+            transition: all 0.5s;
+        }
+
+        /* Dimensiones de los anillos */
+        #ring-outer { width: 650px; height: 650px; background-color: rgba(255, 255, 255, 0.05); z-index: 1; }
+        #ring-middle { width: 450px; height: 450px; background-color: rgba(255, 255, 255, 0.1); z-index: 2; }
+        #ring-inner { width: 250px; height: 250px; background-color: rgba(255, 255, 255, 0.15); z-index: 3; }
+        
+        /* Etiquetas de Anillo */
+        .ring-label {
+            position: absolute;
+            top: 20px;
+            font-weight: bold;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.4);
+            font-size: 0.8rem;
+        }
+
+        /* SLOTS (Las casillas donde se juega) */
+        .slot {
+            position: absolute;
+            width: 100px;
+            height: 60px;
             background: white;
-            padding: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            color: #333;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.75rem;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            transition: transform 0.2s, background 0.3s;
+            padding: 5px;
+            border: 2px solid transparent;
+            z-index: 10;
         }
         
-        /* Scoreboard */
-        .scoreboard {
+        .slot:hover { transform: scale(1.1); z-index: 20; }
+        .slot.disabled { opacity: 0.4; pointer-events: none; filter: grayscale(100%); }
+        .slot.occupied { color: white; border: 2px solid white; transform: scale(1); cursor: default; }
+
+        /* Posicionamiento de Slots (Top, Right, Bottom, Left) */
+        .pos-top { top: 0; left: 50%; transform: translate(-50%, -20%); }
+        .pos-right { top: 50%; right: 0; transform: translate(20%, -50%); }
+        .pos-bottom { bottom: 0; left: 50%; transform: translate(-50%, 20%); }
+        .pos-left { top: 50%; left: 0; transform: translate(-20%, -50%); }
+
+        /* Ajuste para anillo interior que es más pequeño */
+        #ring-inner .pos-top { transform: translate(-50%, -50%); }
+        #ring-inner .pos-right { transform: translate(50%, -50%); }
+        #ring-inner .pos-bottom { transform: translate(-50%, 50%); }
+        #ring-inner .pos-left { transform: translate(-50%, -50%); }
+
+
+        /* Puntos revelados */
+        .points-badge {
+            display: none;
+            background: #f1c40f;
+            color: black;
+            border-radius: 4px;
+            padding: 2px 5px;
+            margin-top: 3px;
+            font-size: 0.9em;
+        }
+
+        /* --- MODAL (Preguntas y Avisos) --- */
+        #modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
             display: flex;
-            justify-content: space-around;
-            background: var(--starbucks-black);
-            color: white;
-            padding: 10px;
-            border-radius: 10px;
-            margin-bottom: 20px;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            backdrop-filter: blur(5px);
         }
-        .team-score { text-align: center; }
-        .team-score span { display: block; font-size: 1.5em; font-weight: bold; }
-
-        /* Game Areas */
-        .phase-box {
-            border: 2px solid var(--accent);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            display: none; /* Hidden by default */
+        .modal-content {
+            background: white;
+            color: #333;
+            width: 600px;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-top: 10px solid var(--sb-green);
         }
-        .active { display: block; animation: fadeIn 0.5s; }
+        .hidden { display: none !important; }
 
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-        h2 { border-bottom: 2px solid var(--starbucks-green); padding-bottom: 5px; }
-
-        /* Buttons */
-        button {
-            background-color: var(--starbucks-green);
+        /* Botones del Modal */
+        .opt-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f4f4f4;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1rem;
+            text-align: left;
+            transition: background 0.2s;
+        }
+        .opt-btn:hover { background: #e0e0e0; border-left: 5px solid var(--sb-green); }
+        
+        #action-btn {
+            background: var(--sb-green);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 10px 30px;
+            font-size: 1.2rem;
+            border-radius: 30px;
             cursor: pointer;
-            font-size: 1em;
-            margin: 5px;
-            transition: transform 0.1s;
+            margin-top: 20px;
         }
-        button:hover { transform: scale(1.05); background-color: #005c3d; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; transform: none; }
+        #action-btn:hover { background: #00583a; }
 
-        /* Options Grid */
-        .options-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .location-card {
-            background: #eee;
-            padding: 20px;
-            text-align: center;
-            border-radius: 8px;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }
-        .location-card:hover { border-color: var(--starbucks-green); background: #e8f5e9; }
-        
-        /* Question Styles */
-        .question-text { font-size: 1.2em; font-weight: bold; margin-bottom: 15px; }
-        .option-btn { display: block; width: 100%; margin: 5px 0; text-align: left; }
-
-        .result-log {
-            background: #fff3cd;
-            padding: 10px;
-            margin-top: 10px;
-            border-radius: 5px;
+        /* Status Banner */
+        #status-bar {
+            position: absolute;
+            top: 20px;
+            background: white;
+            color: black;
+            padding: 10px 30px;
+            border-radius: 30px;
             font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 1.2rem;
+            z-index: 50;
         }
-        
-        .ring-indicator {
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            color: #666;
-            font-size: 0.9em;
-            margin-bottom: 10px;
-        }
+
     </style>
 </head>
 <body>
 
-    <h1>☕ Geomarketing: La Conquista del Territorio</h1>
+<div id="sidebar">
+    <h1>Geo-Battle</h1>
+    
+    <div class="score-box" id="sb-0"><div style="display:flex;align-items:center"><span class="team-indicator t1"></span>Equipo 1</div><span id="sc-0">0</span></div>
+    <div class="score-box" id="sb-1"><div style="display:flex;align-items:center"><span class="team-indicator t2"></span>Equipo 2</div><span id="sc-1">0</span></div>
+    <div class="score-box" id="sb-2"><div style="display:flex;align-items:center"><span class="team-indicator t3"></span>Equipo 3</div><span id="sc-2">0</span></div>
+    <div class="score-box" id="sb-3"><div style="display:flex;align-items:center"><span class="team-indicator t4"></span>Equipo 4</div><span id="sc-3">0</span></div>
 
-    <div class="container">
-        <div class="scoreboard" id="scoreboard">
-            <div class="team-score">Equipo 1<span id="score-0">0</span></div>
-            <div class="team-score">Equipo 2<span id="score-1">0</span></div>
-            <div class="team-score">Equipo 3<span id="score-2">0</span></div>
-            <div class="team-score">Equipo 4<span id="score-3">0</span></div>
-        </div>
-
-        <div id="phase-start" class="phase-box active">
-            <h2>Inicio del Juego</h2>
-            <p>Bienvenidos. Vamos a competir por dominar el mercado del café utilizando estrategia de geomarketing.</p>
-            <p>Hay 3 Anillos (Niveles): Periferia, Ciudad y Zona Prime.</p>
-            <button onclick="startGame()">Lanzar dado para decidir quién empieza</button>
-        </div>
-
-        <div id="phase-question" class="phase-box">
-            <div class="ring-indicator" id="ring-display">ANILLO 1</div>
-            <h2 id="current-team-turn">Turno del Equipo X</h2>
-            <p class="question-text" id="q-text">Pregunta...</p>
-            <div id="q-options">
-                </div>
-        </div>
-
-        <div id="phase-selection" class="phase-box">
-            <h2>Selección de Ubicación</h2>
-            <p>El <strong id="picking-team">Equipo X</strong> elige ubicación.</p>
-            <p style="font-size: 0.9em; color: #666;">(Si acertaste, eliges antes. Si fallaste, eliges lo que queda).</p>
-            <div class="options-grid" id="location-options">
-                </div>
-        </div>
-
-        <div id="phase-round-end" class="phase-box">
-            <h2>Resultados del Anillo</h2>
-            <div id="round-results-table"></div>
-            <button onclick="nextRound()" style="margin-top: 15px;">Ir al siguiente Anillo</button>
-        </div>
-
-        <div id="phase-game-over" class="phase-box">
-            <h2>🏆 Fin de la Partida</h2>
-            <div id="final-winner" style="font-size: 2em; text-align: center; color: var(--starbucks-green); margin: 20px;"></div>
-            <button onclick="location.reload()">Jugar de nuevo</button>
-        </div>
+    <div id="game-log">
+        <p>> Juego Iniciado</p>
+        <p>> Esperando lanzamiento...</p>
     </div>
+</div>
+
+<div id="main-area">
+    <div id="status-bar">Fase de Preparación</div>
+
+    <div id="board-container">
+        <div class="ring" id="ring-outer">
+            <span class="ring-label">Periferia</span>
+            </div>
+
+        <div class="ring" id="ring-middle">
+            <span class="ring-label">Ciudad</span>
+            </div>
+
+        <div class="ring" id="ring-inner">
+            <span class="ring-label">Prime</span>
+            </div>
+    </div>
+</div>
+
+<div id="modal-overlay">
+    <div class="modal-content">
+        <h2 id="modal-title">Bienvenidos</h2>
+        <p id="modal-desc">Este es un juego de estrategia de localización. ¿Listos?</p>
+        <div id="modal-options"></div>
+        <button id="action-btn" onclick="startGame()">Empezar Partida</button>
+    </div>
+</div>
 
 <script>
-    // --- DATOS DEL JUEGO (CONFIGURABLE) ---
-    
-    // Anillos y Ubicaciones (Puntos ocultos)
-    const rings = [
+    // --- CONFIGURACIÓN DE DATOS ---
+    const teams = [
+        { name: "Equipo 1", color: "var(--t1)", score: 0 },
+        { name: "Equipo 2", color: "var(--t2)", score: 0 },
+        { name: "Equipo 3", color: "var(--t3)", score: 0 },
+        { name: "Equipo 4", color: "var(--t4)", score: 0 }
+    ];
+
+    const locationsData = [
         {
-            name: "Anillo 1: La Periferia (Residencial)",
-            locations: [
-                { name: "Centro Comercial (Food Court)", points: 500, reason: "Alto tráfico cautivo y ocio." },
-                { name: "Gasolinera en Autopista", points: 300, reason: "Paso rápido, pero ticket medio bajo." },
-                { name: "Barrio Dormitorio (Baja densidad)", points: 100, reason: "Solo funciona fines de semana. Poca rotación." },
-                { name: "Salida de Colegio Privado", points: 400, reason: "Padres esperando = Consumo alto de café." }
+            ringId: "ring-outer",
+            places: [
+                { name: "Centro Comercial", points: 500, pos: "pos-top" },
+                { name: "Gasolinera", points: 200, pos: "pos-right" },
+                { name: "Barrio Dormitorio", points: 100, pos: "pos-bottom" },
+                { name: "Colegio Privado", points: 400, pos: "pos-left" }
             ]
         },
         {
-            name: "Anillo 2: Zona Urbana (Barrios)",
-            locations: [
-                { name: "Calle Peatonal Secundaria", points: 200, reason: "Poco flujo si no es la calle principal." },
-                { name: "Frente a un Starbucks Competidor", points: 600, reason: "¡Estrategia Clustering! Robas cola y ganas visibilidad." },
-                { name: "Junto a Boca de Metro", points: 500, reason: "Tráfico masivo de mañana (Take away)." },
-                { name: "Plaza con Parque Infantil", points: 300, reason: "Estancia larga pero consumo lento." }
+            ringId: "ring-middle",
+            places: [
+                { name: "Junto a Competencia", points: 600, pos: "pos-top" },
+                { name: "Calle Secundaria", points: 150, pos: "pos-right" },
+                { name: "Metro / Bus", points: 500, pos: "pos-bottom" },
+                { name: "Parque", points: 250, pos: "pos-left" }
             ]
         },
         {
-            name: "Anillo 3: Nudos Críticos (Prime)",
-            locations: [
-                { name: "Aeropuerto (Terminal Salidas)", points: 1000, reason: "El 'Santo Grial'. Precios altos y clientes cautivos." },
-                { name: "Callejón sin salida en el Centro", points: 50, reason: "Sin visibilidad no hay venta por impulso." },
-                { name: "Distrito Financiero (Lobby Torre)", points: 800, reason: "Ticket alto diario y reuniones corporativas." },
-                { name: "Calle Comercial Turística", points: 700, reason: "Volumen masivo constante." }
+            ringId: "ring-inner",
+            places: [
+                { name: "Aeropuerto", points: 1000, pos: "pos-top" },
+                { name: "Callejón Centro", points: 50, pos: "pos-right" },
+                { name: "Torre Oficinas", points: 800, pos: "pos-bottom" },
+                { name: "Plaza Turística", points: 700, pos: "pos-left" }
             ]
         }
     ];
 
-    // Banco de Preguntas
     const questions = [
-        // R1 Questions
-        { t: "¿Qué variable analiza el geomarketing para definir el área de influencia real por tiempo?", options: ["Radio concéntrico", "Isócrona", "Código Postal", "Distrito"], correct: 1 },
-        { t: "Según el texto, ¿qué porcentaje de datos empresariales tiene componente geográfica?", options: ["20%", "50%", "80%", "10%"], correct: 2 },
-        { t: "¿Qué tipo de datos analiza la 'movilidad' en geomarketing?", options: ["Censo", "GPS y telefonía móvil", "Encuestas a pie de calle", "Tickets de venta"], correct: 1 },
-        { t: "¿Cómo se llama el fenómeno de abrir tiendas muy cerca unas de otras?", options: ["Marketing Mix", "Clustering (Saturación)", "Franquiciado", "Dumping"], correct: 1 },
+        { q: "¿Qué mide una isócrona?", opts: ["Distancia en km", "Tiempo de viaje", "Densidad", "Ventas"], a: 1 },
+        { q: "¿Qué es el efecto clustering?", opts: ["Dispersión", "Agrupamiento denso", "Venta online", "Franquicia"], a: 1 },
+        { q: "¿Qué dato NO es demográfico?", opts: ["Edad", "Renta", "Flujo peatonal", "Sexo"], a: 2 },
+        { q: "La canibalización es buena si...", opts: ["Se pierde dinero", "Sube el total zonal", "Cierra el local", "Baja el alquiler"], a: 1 },
         
-        // R2 Questions
-        { t: "¿Qué es la 'población flotante'?", options: ["Gente que vive en barcos", "Residentes empadronados", "Personas que transitan pero no viven allí", "Turistas solo en verano"], correct: 2 },
-        { t: "¿Qué estrategia usa Inditex para cerrar tiendas pequeñas y abrir grandes?", options: ["Absorción / Flagships", "Franquicias", "E-commerce puro", "Low cost"], correct: 0 },
-        { t: "¿Qué busca el análisis de la 'Acera Buena'?", options: ["Donde da el sol", "El flujo peatonal direccional", "Donde hay más bancos", "Aceras más anchas"], correct: 1 },
-        { t: "La canibalización comercial se considera aceptable si...", options: ["Nunca es aceptable", "Bloquea a la competencia y sube ventas totales", "Es menor al 1%", "Los gerentes no se dan cuenta"], correct: 1 },
+        { q: "¿Qué es Población Flotante?", opts: ["Vive en la zona", "Pasa por la zona", "Trabaja online", "No gasta"], a: 1 },
+        { q: "¿Locomotora comercial es...?", opts: ["Un tren", "Una tienda ancla", "Un camión", "Un parking"], a: 1 },
+        { q: "¿Qué busca el análisis de acera?", opts: ["Sombra", "Flujo direccional", "Anchura", "Limpieza"], a: 1 },
+        { q: "En oficinas, ¿qué importa más?", opts: ["Comodidad", "Rapidez", "Wifi", "Decoración"], a: 1 },
 
-        // R3 Questions
-        { t: "¿Qué es el Geofencing?", options: ["Vallas publicitarias", "Publicidad digital activada por ubicación GPS", "Seguridad en la tienda", "Mapas de calor"], correct: 1 },
-        { t: "¿Qué es el 'Share of Wallet'?", options: ["Cuota de mercado", "Cuota de bolsillo (gasto por hogar)", "Propina media", "Descuentos aplicados"], correct: 1 },
-        { t: "¿Qué busca una marca de lujo como Tiffany & Co?", options: ["Alta densidad de población", "Barrios jóvenes", "Alta renta y tráfico turístico", "Zonas de oficinas"], correct: 2 },
-        { t: "¿Qué tecnología usa Starbucks para su sistema Atlas?", options: ["Excel", "GIS (Sistemas de Información Geográfica)", "Google Maps básico", "Bloc de notas"], correct: 1 }
+        { q: "¿Geofencing usa...?", opts: ["Vallas físicas", "GPS/Móvil", "Email", "Encuestas"], a: 1 },
+        { q: "Share of Wallet es...", opts: ["Cuota de mercado", "Gasto por cliente", "Coste", "Beneficio"], a: 1 },
+        { q: "¿Sistema usado por Starbucks?", opts: ["Atlas (GIS)", "Excel", "Google Earth", "Maps"], a: 0 },
+        { q: "¿Objetivo del geomarketing?", opts: ["Hacer mapas", "Inteligencia territorial", "Diseño", "Vender casas"], a: 1 }
     ];
 
-    // --- ESTADO DEL JUEGO ---
-    let currentRound = 0;
-    let scores = [0, 0, 0, 0];
-    let initialOrder = []; // [0, 1, 2, 3] mezclado
-    let selectionQueue = []; // Cola de quienes eligen primero (acertantes) y luego (fallantes)
-    let teamResultsCurrentRound = []; // Para guardar qué eligió cada uno
-    
-    // Variables temporales de la ronda
-    let questionIndex = 0; // 0 a 3 (dentro de la ronda)
-    let pickingIndex = 0; // índice en la selectionQueue
-    let currentPhase = 'start'; // start, question, selection, results
-    let winners = [];
-    let losers = [];
+    // --- VARIABLES DE ESTADO ---
+    let currentRound = 0; // 0, 1, 2
+    let questionIdx = 0;
+    let turnOrder = [];
+    let selectionQueue = [];
+    let currentPhase = 'idle'; 
 
-    // --- LÓGICA ---
-
-    function showPhase(phaseId) {
-        document.querySelectorAll('.phase-box').forEach(el => el.classList.remove('active'));
-        document.getElementById(phaseId).classList.add('active');
+    // --- FUNCIONES DE UI ---
+    function log(msg) {
+        let box = document.getElementById('game-log');
+        box.innerHTML += `<p>> ${msg}</p>`;
+        box.scrollTop = box.scrollHeight;
     }
 
-    function updateScoreboard() {
-        scores.forEach((s, i) => document.getElementById(`score-${i}`).innerText = s);
+    function updateScores() {
+        teams.forEach((t, i) => {
+            document.getElementById(`sc-${i}`).innerText = t.score;
+        });
     }
 
-    function shuffle(array) {
-        return array.sort(() => Math.random() - 0.5);
+    function setStatus(msg) {
+        document.getElementById('status-bar').innerText = msg;
     }
+
+    function renderBoard(round) {
+        // Limpia slots antiguos y activa visualmente el anillo actual
+        document.querySelectorAll('.ring').forEach(r => {
+            r.innerHTML = `<span class="ring-label">${r.querySelector('.ring-label').innerText}</span>`; // Keep label, clear slots
+            r.style.borderColor = "rgba(255,255,255,0.1)";
+            r.style.opacity = "0.3";
+        });
+
+        // Highlight current ring
+        let activeRingData = locationsData[round];
+        let ringEl = document.getElementById(activeRingData.ringId);
+        ringEl.style.borderColor = "var(--sb-green)";
+        ringEl.style.opacity = "1";
+        ringEl.style.boxShadow = "0 0 20px rgba(0,255,100,0.1)";
+
+        // Create Slots
+        activeRingData.places.forEach((place, idx) => {
+            let slot = document.createElement('div');
+            slot.className = `slot ${place.pos}`;
+            slot.innerHTML = `<div>${place.name}</div><div class="points-badge">+${place.points}</div>`;
+            slot.dataset.points = place.points;
+            slot.dataset.idx = idx;
+            slot.onclick = () => handleSlotClick(slot, idx);
+            ringEl.appendChild(slot);
+        });
+    }
+
+    // --- LÓGICA DEL JUEGO ---
 
     function startGame() {
-        initialOrder = shuffle([0, 1, 2, 3]);
+        document.getElementById('modal-overlay').classList.add('hidden');
         currentRound = 0;
-        scores = [0, 0, 0, 0];
-        updateScoreboard();
+        // Orden aleatorio inicial
+        turnOrder = [0, 1, 2, 3].sort(() => Math.random() - 0.5);
+        log("Orden de turno aleatorio: " + turnOrder.map(i => teams[i].name).join(", "));
         startRound();
     }
 
     function startRound() {
-        if (currentRound >= rings.length) {
-            endGame();
+        if(currentRound >= 3) { endGame(); return; }
+        
+        setStatus(`Ronda ${currentRound + 1}: ${locationsData[currentRound].ringId.replace('ring-', '').toUpperCase()}`);
+        log(`--- INICIO RONDA ${currentRound + 1} ---`);
+        
+        renderBoard(currentRound);
+        
+        // Reset queues
+        selectionQueue = []; 
+        questionIdx = 0; // Dentro de la ronda
+        
+        // Start Question Phase
+        playQuestionTurn();
+    }
+
+    function playQuestionTurn() {
+        if(questionIdx >= 4) {
+            // Fin de preguntas, vamos a selección
+            startSelectionPhase();
             return;
         }
 
-        // Reset round vars
-        questionIndex = 0;
-        pickingIndex = 0;
-        winners = [];
-        losers = [];
-        teamResultsCurrentRound = [];
-        
-        // Copiar ubicaciones disponibles para ir eliminándolas
-        currentLocationsAvailable = [...rings[currentRound].locations];
+        let teamIdx = turnOrder[questionIdx];
+        let qIndexGlobal = (currentRound * 4) + questionIdx;
+        let q = questions[qIndexGlobal];
 
-        document.getElementById('ring-display').innerText = rings[currentRound].name;
-        
-        // Empezamos preguntas
-        askQuestion();
-    }
-
-    function askQuestion() {
-        showPhase('phase-question');
-        
-        // Determinar qué equipo juega ahora (basado en orden inicial rotado si quisieramos, o fijo)
-        // Para simplificar, usamos el initialOrder como orden de preguntas
-        let currentTeam = initialOrder[questionIndex];
-        
-        document.getElementById('current-team-turn').innerText = `Turno del Equipo ${currentTeam + 1}`;
-        
-        // Seleccionar pregunta (calculo simple para no repetir: round * 4 + index)
-        let qData = questions[currentRound * 4 + questionIndex];
-        
-        document.getElementById('q-text').innerText = qData.t;
-        let optsDiv = document.getElementById('q-options');
-        optsDiv.innerHTML = '';
-
-        qData.options.forEach((opt, idx) => {
-            let btn = document.createElement('button');
-            btn.className = 'option-btn';
-            btn.innerText = opt;
-            btn.onclick = () => answerQuestion(currentTeam, idx === qData.correct);
-            optsDiv.appendChild(btn);
+        showModalQuestion(teams[teamIdx].name, q, (isCorrect) => {
+            if(isCorrect) {
+                log(`${teams[teamIdx].name} acertó.`);
+                selectionQueue.unshift(teamIdx); // Pone al principio
+            } else {
+                log(`${teams[teamIdx].name} falló.`);
+                selectionQueue.push(teamIdx); // Pone al final
+            }
+            questionIdx++;
+            playQuestionTurn();
         });
     }
 
-    function answerQuestion(teamId, isCorrect) {
-        if (isCorrect) {
-            winners.push(teamId);
-            alert("¡Correcto! Tendréis prioridad para elegir zona.");
-        } else {
-            losers.push(teamId);
-            alert("Incorrecto. Tendréis que esperar al final para elegir.");
-        }
+    function showModalQuestion(teamName, qData, cb) {
+        let m = document.getElementById('modal-overlay');
+        let title = document.getElementById('modal-title');
+        let desc = document.getElementById('modal-desc');
+        let opts = document.getElementById('modal-options');
+        let btn = document.getElementById('action-btn');
 
-        questionIndex++;
-        if (questionIndex < 4) {
-            askQuestion();
-        } else {
-            // Fin de preguntas, pasamos a selección
-            startSelectionPhase();
-        }
+        m.classList.remove('hidden');
+        title.innerText = `Turno: ${teamName}`;
+        title.style.color = teams[turnOrder[questionIdx]].color; // Team color
+        desc.innerText = qData.q;
+        btn.style.display = 'none';
+        
+        opts.innerHTML = '';
+        qData.opts.forEach((opt, idx) => {
+            let b = document.createElement('button');
+            b.className = 'opt-btn';
+            b.innerText = opt;
+            b.onclick = () => {
+                m.classList.add('hidden');
+                cb(idx === qData.a);
+            };
+            opts.appendChild(b);
+        });
     }
+
+    // --- FASE DE SELECCIÓN EN EL TABLERO ---
+    
+    let pickingIdx = 0;
 
     function startSelectionPhase() {
-        // Construir la cola: Primero ganadores, luego perdedores
-        selectionQueue = [...winners, ...losers];
-        pickingIndex = 0;
-        showSelection();
+        pickingIdx = 0;
+        log("Fase de Selección: El tablero está activo.");
+        nextPick();
     }
 
-    function showSelection() {
-        showPhase('phase-selection');
-        let currentTeam = selectionQueue[pickingIndex];
-        document.getElementById('picking-team').innerText = `Equipo ${currentTeam + 1}`;
+    function nextPick() {
+        if(pickingIdx >= 4) {
+            endRound();
+            return;
+        }
         
-        let grid = document.getElementById('location-options');
-        grid.innerHTML = '';
-
-        currentLocationsAvailable.forEach((loc, idx) => {
-            let card = document.createElement('div');
-            card.className = 'location-card';
-            card.innerHTML = `<strong>${loc.name}</strong><br><small>??? Puntos</small>`;
-            card.onclick = () => pickLocation(currentTeam, idx);
-            grid.appendChild(card);
-        });
-    }
-
-    function pickLocation(teamId, locIndex) {
-        let pickedLoc = currentLocationsAvailable[locIndex];
+        let teamIdx = selectionQueue[pickingIdx];
+        let team = teams[teamIdx];
         
-        // Guardar resultado
-        teamResultsCurrentRound.push({
-            team: teamId,
-            locName: pickedLoc.name,
-            points: pickedLoc.points,
-            reason: pickedLoc.reason
-        });
+        setStatus(`Turno de Selección: ${team.name}`);
+        
+        // Modal pequeño informativo
+        let m = document.getElementById('modal-overlay');
+        let title = document.getElementById('modal-title');
+        let desc = document.getElementById('modal-desc');
+        let opts = document.getElementById('modal-options');
+        let btn = document.getElementById('action-btn');
 
-        // Sumar puntos
-        scores[teamId] += pickedLoc.points;
-        updateScoreboard();
-
-        // Quitar ubicación del array
-        currentLocationsAvailable.splice(locIndex, 1);
-
-        pickingIndex++;
-        if (pickingIndex < 4) {
-            showSelection();
-        } else {
-            showRoundResults();
+        m.classList.remove('hidden');
+        title.innerText = `¡A elegir sitio!`;
+        title.style.color = team.color;
+        desc.innerText = `${team.name}, haz clic en una ubicación disponible en el anillo iluminado.`;
+        opts.innerHTML = '';
+        btn.style.display = 'block';
+        btn.innerText = "Ir al Mapa";
+        btn.onclick = () => {
+            m.classList.add('hidden');
+            enableBoardInteraction(teamIdx);
         }
     }
 
-    function showRoundResults() {
-        showPhase('phase-round-end');
-        let container = document.getElementById('round-results-table');
-        container.innerHTML = '';
-
-        // Ordenar resultados para mostrar
-        teamResultsCurrentRound.forEach(res => {
-            let div = document.createElement('div');
-            div.className = 'result-log';
-            div.innerHTML = `
-                Equipo ${res.team + 1} eligió: <strong>${res.locName}</strong><br>
-                <span style="color:var(--starbucks-green)">+${res.points} Puntos</span><br>
-                <small><em>${res.reason}</em></small>
-            `;
-            container.appendChild(div);
-        });
+    function enableBoardInteraction(teamIdx) {
+        // Marcamos el estado global
+        currentPhase = 'picking';
+        document.body.dataset.activeTeam = teamIdx; // Para saber quién clica
     }
 
-    function nextRound() {
-        // El orden para la siguiente ronda puede ser basado en puntuación, 
-        // pero para este juego simple mantendremos el dado inicial o rotaremos
-        // Vamos a rotar el orden inicial: el que fue primero ahora es último
-        initialOrder.push(initialOrder.shift());
+    function handleSlotClick(slotElement, locIdx) {
+        if(currentPhase !== 'picking') return;
+        if(slotElement.classList.contains('occupied')) return;
+
+        let teamIdx = parseInt(document.body.dataset.activeTeam);
+        let team = teams[teamIdx];
+        let points = parseInt(slotElement.dataset.points);
+
+        // Visual update
+        slotElement.classList.add('occupied');
+        slotElement.style.background = team.color;
+        slotElement.style.borderColor = "white";
         
-        currentRound++;
-        startRound();
+        // Logic Update
+        team.score += points;
+        updateScores();
+        log(`${team.name} ocupó ${slotElement.innerText.split('\n')[0]}`);
+
+        // Next
+        currentPhase = 'idle';
+        pickingIdx++;
+        nextPick();
+    }
+
+    function endRound() {
+        // Revelar puntos
+        document.querySelectorAll('.points-badge').forEach(el => el.style.display = 'block');
+        
+        setTimeout(() => {
+            alert("Fin de Ronda. ¡Mira los puntos conseguidos!");
+            // Rotar orden para la siguiente
+            turnOrder.push(turnOrder.shift());
+            currentRound++;
+            startRound();
+        }, 2000);
     }
 
     function endGame() {
-        showPhase('phase-game-over');
-        // Calcular ganador
-        let maxScore = Math.max(...scores);
-        let winnerIndices = scores.map((s, i) => s === maxScore ? i + 1 : null).filter(x => x);
+        let max = Math.max(...teams.map(t => t.score));
+        let winners = teams.filter(t => t.score === max);
         
-        let text = "";
-        if (winnerIndices.length > 1) {
-            text = `¡Empate entre Equipos ${winnerIndices.join(' y ')}!`;
-        } else {
-            text = `¡Ganador: Equipo ${winnerIndices[0]}!`;
-        }
+        let m = document.getElementById('modal-overlay');
+        m.classList.remove('hidden');
+        document.getElementById('modal-options').innerHTML = '';
+        document.getElementById('action-btn').innerText = "Reiniciar";
+        document.getElementById('action-btn').onclick = () => location.reload();
         
-        document.getElementById('final-winner').innerText = text;
+        let title = document.getElementById('modal-title');
+        title.innerText = "¡FIN DEL JUEGO!";
+        title.style.color = "gold";
+        
+        document.getElementById('modal-desc').innerHTML = `
+            <h1>Ganador: ${winners.map(w => w.name).join(' y ')}</h1>
+            <p>Puntuación Final: ${max} puntos</p>
+        `;
     }
 
 </script>
-
 </body>
 </html>
